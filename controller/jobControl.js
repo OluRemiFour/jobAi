@@ -41,7 +41,6 @@ const normalizeJobs = (jobs, source) => {
   });
 };
 
-// Fetch more results from Adzuna
 const fetchAdzunaJobs = async ({ title, location }) => {
   const url = `https://api.adzuna.com/v1/api/jobs/us/search/1&results_per_page=20`;
   try {
