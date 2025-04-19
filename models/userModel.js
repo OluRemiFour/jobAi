@@ -1,4 +1,4 @@
-const bcrypt = require("bcrypt");
+const bcryptjs = require("bcryptjs");
 const mongoose = require("mongoose");
 const validator = require("validator");
 const crypto = require("crypto");
@@ -90,14 +90,14 @@ userModel.pre("save", async function (next) {
   if (!this.isModified("password") && !this.isModified("confirmPassword")) {
     return next();
   }
-  this.password = await bcrypt.hash(this.password, 12);
+  this.password = await bcryptjs.hash(this.password, 12);
   this.confirmPassword = undefined;
 
   next();
 });
 
 userModel.methods.comparePasswordDb = async (DbPassword, userInputPassword) => {
-  return await bcrypt.compare(DbPassword, userInputPassword);
+  return await bcryptjs.compare(DbPassword, userInputPassword);
 };
 
 userModel.methods.isPasswordChange = (JWTTimestamp) => {

@@ -1,7 +1,7 @@
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const bcrypt = require("bcrypt");
+const bcryptjs = require("bcryptjs");
 const sendEmail = require("../utils/email");
 const User = require("../models/userModel");
 
@@ -130,7 +130,7 @@ exports.sendVerificationEmail = async (req, res, next) => {
   try {
     // create OTP and hash it
     const otp = generateOTP();
-    const hashedOtp = await bcrypt.hash(otp, 10);
+    const hashedOtp = await bcryptjs.hash(otp, 10);
 
     // Save hashedOTP and expiration time (Date.now() + 10 * 60 * 1000)
     const user = await User.findOneAndUpdate(
@@ -176,7 +176,7 @@ exports.verifyEmailOTP = async (req, res) => {
     }
 
     // Compare the OTP and check if it's expired
-    const isMatch = await bcrypt.compare(otp, user.otp);
+    const isMatch = await bcryptjs.compare(otp, user.otp);
     const isExpired = user.otpExpires < Date.now();
 
     if (!isMatch || isExpired) {
@@ -349,7 +349,7 @@ exports.updatePassword = async (req, res) => {
       return res.status(400).json({ message: "New passwords do not match" });
     }
 
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    const isMatch = await bcryptjs.compare(oldPassword, user.password);
 
     if (!isMatch) {
       return res.status(400).json({ message: "Incorrect current password" });
