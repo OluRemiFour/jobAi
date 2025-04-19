@@ -4,6 +4,7 @@ const morgan = require("morgan");
 const mongoose = require("mongoose");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const cors = require("cors");
 // const mongoSanitize = require("express-mongo-sanitize");
 // const xss = require("xss-clean");
 
@@ -12,6 +13,12 @@ const port = process.env.PORT || 5000;
 
 // helmet for headers security check
 app.use(helmet());
+
+app.use(
+  cors({
+    origin: "http://localhost:3000/",
+  })
+);
 
 // sanitize and remove any no sql ($) injection from malicious code
 // app.use(mongoSanitize());
