@@ -1,5 +1,5 @@
 const axios = require("axios");
-const bcryptjs = require("bcryptjsjs");
+const bcryptjs = require("bcryptjs");
 const User = require("../models/userModel");
 
 const extractEmail = (text) => {
