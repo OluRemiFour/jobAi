@@ -42,12 +42,14 @@ const normalizeJobs = (jobs, source) => {
 };
 
 const fetchAdzunaJobs = async ({ title, location }) => {
-  const url = `https://api.adzuna.com/v1/api/jobs/us/search/1&results_per_page=20`;
+  const url = `https://api.adzuna.com/v1/api/jobs/us/search/`;
   try {
     const res = await axios.get(url, {
       params: {
         app_id: process.env.ADZUNA_APP_ID,
         app_key: process.env.ADZUNA_APP_KEY,
+        page: 2,
+        num_pages: 2,
         what: title,
         where: location,
       },
@@ -95,9 +97,9 @@ exports.getAllJobs = async (req, res) => {
 
   // const { title, location } = req.query;
   const adzunaJobs = await fetchAdzunaJobs({ title, location });
-  const jsearchJobsData = await jsearchJobs({ title, location });
+  // const jsearchJobsData = await jsearchJobs({ title, location });
 
-  const allJobs = [...adzunaJobs, ...jsearchJobsData];
+  const allJobs = [...adzunaJobs];
 
   // const userPrefs = req.user; // Assuming req.user contains the user's preferences
   // const matchedJobs = normalizedJobs.map((job) => {

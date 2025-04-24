@@ -87,19 +87,18 @@ const userModel = new mongoose.Schema({
 });
 
 userModel.pre("save", async function (next) {
-  if (!this.isModified("password") && !this.isModified("confirmPassword")) {
-    return next();
-  }
-  this.password = await bcryptjs.hash(this.password, 12);
-  this.confirmPassword = undefined;
+  // Only hash if password is modified (or new user)
+  if (!this.isModified("password")) return next();
 
+  // Hash the password
+  this.password = await bcryptjs.hash(this.password, 12);
+  this.confirmPassword = undefined; // Remove confirmPassword (if used)
   next();
 });
 
-userModel.methods.comparePasswordDb = async (DbPassword, userInputPassword) => {
-  return await bcryptjs.compare(DbPassword, userInputPassword);
+userModel.methods.comparePasswordDb = async function (userInputPassword) {
+  return await bcryptjs.compare(userInputPassword, this.password);
 };
-
 userModel.methods.isPasswordChange = (JWTTimestamp) => {
   if (this.passwordChangedAt) {
     const changeTimestamp = parseInt(

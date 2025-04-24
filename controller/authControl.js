@@ -38,32 +38,29 @@ const handleLogin = (user, status, msgSuccess, res) => {
 };
 
 exports.signup = async (req, res, next) => {
-  const { name, email, password, confirmPassword } = req.body;
+  const { name, email, password, confirmPassword, ...restOfData } = req.body;
 
   try {
-    if (!req.body) {
-      return res.status(400).json({
-        message: "Invalid requests, fields required",
-      });
-    }
     if (!name || !email || !password || !confirmPassword) {
       return res.status(400).json({
-        error: "name, email, password, confirmPassword fields are required",
+        error: "All fields are required",
       });
     }
 
     if (password !== confirmPassword) {
-      return res.status(400).json({ message: "passord does not match" });
+      return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).select("+password");
+
     if (existingUser && existingUser.isVerified) {
-      return res.status(400).json({ error: "User already exist" });
+      return res.status(400).json({ error: "User already exists" });
     }
 
-    const user = await User.create(req.body);
+    // ✅ Attach full payload to req.userData
+    req.userData = { name, email, password, ...restOfData };
 
-    req.user = user;
+    console.log(email, password);
     next();
   } catch (err) {
     console.error(err);
@@ -105,58 +102,62 @@ exports.signup = async (req, res, next) => {
 // };
 
 exports.checkUserVerification = async (req, res, next) => {
-  const { email } = req.body;
+  const { email } = req.userData;
 
   try {
     const user = await User.findOne({ email });
 
-    if (user && !user.isVerified) {
-      // Trigger OTP verification process
-      req.user = user; // Pass user to the next middleware (e.g., send OTP)
-      return next(); // Proceed to OTP middleware (sendVerificationEmail)
+    if (user && user.isVerified) {
+      return res.status(400).json({ message: "User already verified" });
     }
 
-    // If the user is verified, proceed with the usual flow
-    res.status(400).json({ message: "User is already verified" });
+    next(); // Proceed to sendVerificationEmail
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
 // Middleware to check if the user is verified, if not, send OTP
-exports.sendVerificationEmail = async (req, res, next) => {
-  const { email } = req.user;
+exports.sendVerificationEmail = async (req, res) => {
+  const { name, email, password, ...restOfData } = req.userData;
 
   try {
-    // create OTP and hash it
+    // Create user - the pre-save hook will hash the password
+    const user = await User.create({
+      name,
+      email,
+      password, // Let the pre-save hook handle hashing
+      isVerified: false,
+      ...restOfData,
+    });
+
+    // Generate OTP
     const otp = generateOTP();
     const hashedOtp = await bcryptjs.hash(otp, 10);
 
-    // Save hashedOTP and expiration time (Date.now() + 10 * 60 * 1000)
-    const user = await User.findOneAndUpdate(
-      { email },
-      {
-        otp: hashedOtp,
-        otpExpires: Date.now() + 10 * 60 * 1000,
-      }
-    );
+    // Update user with OTP - use findByIdAndUpdate to avoid triggering pre-save again
+    await User.findByIdAndUpdate(user._id, {
+      otp: hashedOtp,
+      otpExpires: Date.now() + 10 * 60 * 1000,
+    });
 
-    // Create transporter for email
     const message = `Your verification code is: ${otp}. It will expire in 10 minutes.`;
 
-    // Send the verification email (ensure sendEmail doesn't throw errors)
     await sendEmail({
       email,
       subject: "Verify Your Email",
       message,
     });
 
-    // Don't send response here; let signup handle it
-    next(); // Continue to the next middleware (response)
+    return res.status(201).json({
+      message:
+        "User created successfully. Check your email for verification code.",
+    });
   } catch (error) {
-    // Handle errors if any
     console.error(error);
-    next(error); // Pass error to global error handler
+    res.status(500).json({
+      message: error.message || "Failed to send verification email",
+    });
   }
 };
 
@@ -204,10 +205,6 @@ exports.verifyEmailOTP = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    if (!req.body) {
-      return res.status(400).json({ error: "No data provided" });
-    }
-
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -216,31 +213,23 @@ exports.login = async (req, res) => {
         .json({ error: "email and password fields are required" });
     }
 
-    // Check if user exists
     const user = await User.findOne({ email }).select("+password");
 
-    // Check if the user was found
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Compare the provided password with the hashed password stored in the database
-    const isMatch = await user.comparePasswordDb(password, user.password);
+    const isMatch = await user.comparePasswordDb(password);
+    console.log("Password comparison result:", isMatch);
 
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid password" });
     }
 
-    // Generate JWT token
     const token = jwtToken(user._id);
-    if (!token) {
-      return res.status(500).json({ error: "Failed to generate token" });
-    }
-
-    // Send success response with the token
     handleLogin(user, 200, "Logged in successfully", res);
   } catch (error) {
-    console.error(error);
+    console.error("Login error:", error);
     res.status(500).json({ error: error.message });
   }
 };
