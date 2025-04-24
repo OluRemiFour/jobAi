@@ -42,23 +42,30 @@ const normalizeJobs = (jobs, source) => {
 };
 
 const fetchAdzunaJobs = async ({ title, location }) => {
-  const url = `https://api.adzuna.com/v1/api/jobs/us/search/`;
+  const url = `https://api.adzuna.com/v1/api/jobs/us/search/1`;
+
   try {
     const res = await axios.get(url, {
       params: {
         app_id: process.env.ADZUNA_APP_ID,
         app_key: process.env.ADZUNA_APP_KEY,
-        page: 2,
-        num_pages: 2,
         what: title,
         where: location,
+        max_days_old: 30, // Show recent postings
+        results_per_page: 30, // Get more results
+        sort_by: "date", // Get newest first
       },
     });
 
-    console.log("Adzuna API Response:", res.data);
+    console.log("Adzuna API response:", res.data); // Log full response
+
     return res.data.results || [];
   } catch (err) {
     console.error("Adzuna API Error:", err.message);
+    if (err.response) {
+      console.error("Response data:", err.response.data);
+      console.error("Status code:", err.response.status);
+    }
     return [];
   }
 };
@@ -93,13 +100,12 @@ async function jsearchJobs({ title, location }) {
 exports.getAllJobs = async (req, res) => {
   const user = await User.findById(req.user._id);
   const title = user.jobTitle || req.query.title;
-  const location = user.location || req.query.location || "All Locations";
+  const location = user.location || req.query.location || "";
 
-  // const { title, location } = req.query;
   const adzunaJobs = await fetchAdzunaJobs({ title, location });
-  // const jsearchJobsData = await jsearchJobs({ title, location });
+  const jsearchJobsData = await jsearchJobs({ title, location });
 
-  const allJobs = [...adzunaJobs];
+  const allJobs = [...adzunaJobs, ...jsearchJobsData];
 
   // const userPrefs = req.user; // Assuming req.user contains the user's preferences
   // const matchedJobs = normalizedJobs.map((job) => {
