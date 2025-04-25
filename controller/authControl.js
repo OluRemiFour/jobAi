@@ -122,8 +122,7 @@ exports.sendVerificationEmail = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message:
-        "User created successfully. Check your email for verification code.",
+      message: "Verification email sent",
       data: {
         email: user.email,
         needsVerification: true,
