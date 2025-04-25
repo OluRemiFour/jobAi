@@ -48,7 +48,10 @@ exports.signup = async (req, res, next) => {
     }
 
     if (password !== confirmPassword) {
-      return res.status(400).json({ message: "Passwords do not match" });
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match",
+      });
     }
 
     const existingUser = await User.findOne({ email }).select("+password");
@@ -59,47 +62,15 @@ exports.signup = async (req, res, next) => {
 
     // ✅ Attach full payload to req.userData
     req.userData = { name, email, password, ...restOfData };
-
-    console.log(email, password);
     next();
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
-
-// exports.signup = async (req, res, next) => {
-//   const { name, email, password, confirmPassword } = req.body;
-
-//   try {
-//     if (!name || !email || !password || !confirmPassword) {
-//       return res.status(400).json({
-//         error: "name, email, password, confirmPassword fields are required",
-//       });
-//     }
-
-//     if (password !== confirmPassword) {
-//       return res.status(400).json({ message: "Passwords do not match" });
-//     }
-
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser && existingUser.isVerified) {
-//       return res.status(400).json({ error: "User already exists" });
-//     }
-
-//     const user = await User.create(req.body);
-//     res.status(201).json({
-//       status: "success",
-//       message: "User created successfully, please verify your email",
-//     });
-
-//     req.user = user; // Pass user to next middleware
-//     next(); // Go to sendVerificationEmail
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: err.message });
-//   }
-// };
 
 exports.checkUserVerification = async (req, res, next) => {
   const { email } = req.userData;
@@ -150,13 +121,20 @@ exports.sendVerificationEmail = async (req, res) => {
     });
 
     return res.status(201).json({
+      success: true,
       message:
         "User created successfully. Check your email for verification code.",
+      data: {
+        email: user.email,
+        needsVerification: true,
+      },
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
+      success: false,
       message: error.message || "Failed to send verification email",
+      error: error.message,
     });
   }
 };
