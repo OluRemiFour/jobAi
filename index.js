@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
+const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
@@ -9,6 +10,7 @@ const cors = require("cors");
 // const xss = require("xss-clean");
 
 const app = express();
+app.use(cookieParser());
 const port = process.env.PORT || 5000;
 
 // helmet for headers security check

@@ -204,6 +204,16 @@ exports.login = async (req, res) => {
     }
 
     const token = jwtToken(user._id);
+
+    // Set the token in HttpOnly cookie
+    res.cookie("token", token, {
+      httpOnly: true, // This makes the cookie inaccessible via JavaScript
+      secure: process.env.NODE_ENV === "production", // Only set cookies over HTTPS in production
+      sameSite: "Strict", // CSRF protection
+      maxAge: 3600000, // Token expires in 1 hour
+      path: "/", // The cookie will be sent with every request to your app
+    });
+
     handleLogin(user, 200, "Logged in successfully", res);
   } catch (error) {
     console.error("Login error:", error);
@@ -386,4 +396,9 @@ exports.protect = async (req, res, next) => {
       message: error.message,
     });
   }
+};
+
+exports.logout = async (req, res, next) => {
+  res.clearCookie("token", { path: "/" });
+  res.json({ message: "Logout successful" });
 };
