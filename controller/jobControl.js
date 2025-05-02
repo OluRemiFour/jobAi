@@ -35,6 +35,7 @@ const normalizeJobs = (jobs, source) => {
       source,
       salary: job.salary_min || null,
       postedAt: job.created || job.date || null,
+      skills: job.skills || [],
       mode: inferJobMode(job), // keep this if you're inferring from description or title
       contactEmail: extractEmail(job.description || job.snippet), // <- New helper
     };
