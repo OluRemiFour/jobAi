@@ -14,23 +14,23 @@ exports.allUsers = async (req, res) => {
 exports.getUser = async (req, res) => {
   try {
     // const user = await User.findById(req.params.id);
-    let token;
-    const authHeader = req.headers.authorization || req.headers.Authorization;
-    if (!authHeader) {
-      return res.status(404).json({ message: "Authorization not found" });
-    }
+    // let token;
+    // const authHeader = req.headers.authorization || req.headers.Authorization;
+    // if (!authHeader) {
+    //   return res.status(404).json({ message: "Authorization not found" });
+    // }
 
-    if (authHeader.startsWith("Bearer")) {
-      token = authHeader.split(" ")[1];
-    } else {
-      return res.status(401).json({
-        message: "Invalid authorization format",
-      });
-    }
+    // if (authHeader.startsWith("Bearer")) {
+    //   token = authHeader.split(" ")[1];
+    // } else {
+    //   return res.status(401).json({
+    //     message: "Invalid authorization format",
+    //   });
+    // }
+    const userId = req.user.id;
+    // const decodedToken = jwt.verify(userToken, process.env.JWT_SECRECT);
 
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRECT);
-
-    const user = await User.findById(decodedToken.id);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
         message: "User not found",
