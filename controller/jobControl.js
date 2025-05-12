@@ -1,6 +1,7 @@
 const axios = require("axios");
 const bcryptjs = require("bcryptjs");
 const User = require("../models/userModel");
+const Job = require("../models/jobModel");
 
 const extractEmail = (text) => {
   const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
@@ -107,35 +108,145 @@ exports.getAllJobs = async (req, res) => {
   const jsearchJobsData = await jsearchJobs({ title, location });
 
   const allJobs = [...adzunaJobs, ...jsearchJobsData];
+  const allJob = [...adzunaJobs, ...jsearchJobsData];
 
-  // const userPrefs = req.user; // Assuming req.user contains the user's preferences
-  // const matchedJobs = normalizedJobs.map((job) => {
-  //   const score = scoreMatch(job, userPrefs);
+  const userPrefs = req.user;
+  // const matchedJobs = allJob.map((job) => {
+  //   const score = getJobMatchScore(job, userPrefs);
   //   return { ...job, score };
   // });
+
+  // const adzJob = adzunaJobs.forEach((job) => {
+  //   const match = scoreMatch(job, user);
+  //   console.log(match);
+  // });
+
+  const matchedJobs = allJob.map((job) => {
+    const score = getJobMatchScore(userPrefs, job);
+    return { ...job, score };
+  });
 
   res.status(200).json({
     status: "success",
     results: allJobs.length,
     data: {
-      jobs: allJobs,
+      // jobs: allJobs,
+      matchedJobs: matchedJobs,
     },
   });
 };
 
-exports.getRecommendedJobs = async (req, res) => {};
+exports.saveJob = async (req, res) => {
+  if (!req.body) {
+    return res
+      .status(404)
+      .json({ status: "Fail", message: "Job Fields are required" });
+  }
+  try {
+    const jobData = {
+      ...req.body,
+      userId: req.user.id,
+    };
+    await Job.create(jobData);
+    return res.status(201).json({
+      statusCode: "007",
+      status: "Success",
+      message: "Job Saved Successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      statusCode: "007",
+      status: "Failed",
+      message: error.message,
+    });
+  }
+};
+
+exports.getSavedJobs = async (req, res) => {
+  const userId = req.user.id; // this is the user ID from the token
+  console.log(userId);
+  try {
+    const savedJobs = await Job.find({ userId }); // find all jobs saved by the user
+    if (!savedJobs.length) {
+      return res.status(404).json({
+        status: "Fail",
+        message: "No saved jobs found for this user",
+      });
+    }
+
+    res.status(200).json({
+      statusCode: "007",
+      message: "Job Found successfully",
+      lenght: savedJobs.length,
+      data: savedJobs,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "Failed",
+      message: error.message,
+    });
+  }
+};
 
 function scoreMatch(job, prefs) {
   let score = 0;
   if (job.title.toLowerCase().includes(prefs.jobTitle.toLowerCase()))
     score += 40;
   if (
-    job.location.toLowerCase().includes(prefs.preferredLocation.toLowerCase())
+    // job.location.toLowerCase().includes(prefs.preferredLocation.toLowerCase())
+    job.description.toLowerCase().includes(prefs.summary.toLowerCase())
   )
     score += 30;
   const matchedSkills = prefs.skills.filter((skill) =>
     job.description.toLowerCase().includes(skill.toLowerCase())
   );
   score += matchedSkills.length * 10;
+  if (
+    job.description
+      .toLowerCase()
+      .includes(prefs.industry.toLowerCase().includes)
+  )
+    score += 10;
+  console.log(score);
   return score;
+}
+
+function getJobMatchScore(userPref, job) {
+  const userSkills = userPref.skills
+    .join(",")
+    .toLowerCase()
+    .split(",")
+    .map((s) => s.trim());
+  const jobDescription = job.description.toLowerCase();
+  const jobTitle = job.title.toLowerCase();
+
+  // 1. Job title match (e.g., "software engineer" in "Senior Software Engineer")
+  const titleMatch = jobTitle.includes(userPref.jobTitle.toLowerCase());
+  const titleScore = titleMatch ? 30 : 0;
+
+  // 2. Skills match (50%)
+  const matchedSkills = userSkills.filter(
+    (skill) => jobDescription.includes(skill) || jobTitle.includes(skill)
+  );
+  const skillMatchScore = (matchedSkills.length / userSkills.length) * 50;
+
+  // 3. Seniority vs experience (10%)
+  const isSeniorJob = jobTitle.includes("senior");
+  const years = parseInt(userPref.yearsOfExperience);
+  const seniorityMatch =
+    (isSeniorJob && years >= 4) || (!isSeniorJob && years < 4);
+  const seniorityScore = seniorityMatch ? 10 : 0;
+
+  // 4. Industry match (10%) — if job mentions user's industry
+  const industryScore = jobDescription.includes(userPref.industry.toLowerCase())
+    ? 10
+    : 0;
+
+  // Total score out of 100
+  const totalScore = Math.round(
+    titleScore + skillMatchScore + seniorityScore + industryScore
+  );
+
+  return totalScore; // return percentage match
 }
