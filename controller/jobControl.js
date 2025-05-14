@@ -12,7 +12,7 @@ const extractEmail = (text) => {
 // Infer job mode from title/description/location
 const inferJobMode = (job) => {
   const text = `${job.title} ${job?.description} ${
-    job.location?.display_name || job.location
+    job.location?.display_name || job.location || job_location
   }`.toLowerCase();
 
   if (text.includes("remote")) return "Remote";
@@ -59,7 +59,7 @@ const fetchAdzunaJobs = async ({ title, location }) => {
       },
     });
 
-    console.log("Adzuna API response:", res.data); // Log full response
+    // console.log("Adzuna API response:", res.data); // Log full response
 
     return res.data.results || [];
   } catch (err) {
@@ -83,7 +83,8 @@ async function jsearchJobs({ title, location }) {
       num_pages: 2,
     },
     headers: {
-      "x-rapidapi-key": "88ed7dc1d9msh1c25b91d1f551f8p1a1d44jsn4c41c989f3d5",
+      // "x-rapidapi-key": "e165ae06cemsh8e3b947d3fca54ep19c212jsn459cd70262b4",
+      "x-rapidapi-key": "e900ae06cemsh8e3b947d3fca54ep19c212jsn459cd70262b4",
       "x-rapidapi-host": "jsearch.p.rapidapi.com",
     },
   };
@@ -100,40 +101,57 @@ async function jsearchJobs({ title, location }) {
 }
 
 exports.getAllJobs = async (req, res) => {
-  const user = await User.findById(req.user._id);
-  const title = user.jobTitle || req.query.title;
-  const location = user.location || req.query.location || "";
+  const user = await User.findById(req.user.id);
+  // console.log(user);
+  if (!user) {
+    return res.status(404).json({
+      status: "fail",
+      message: "User not found",
+    });
+  }
+  try {
+    const title = user.jobTitle || req.query.title;
+    const location = user.location || req.query.location || "";
 
-  const adzunaJobs = await fetchAdzunaJobs({ title, location });
-  const jsearchJobsData = await jsearchJobs({ title, location });
+    const adzunaJobs = await fetchAdzunaJobs({ title, location });
+    const jsearchJobsData = await jsearchJobs({ title, location });
 
-  const allJobs = [...adzunaJobs, ...jsearchJobsData];
-  const allJob = [...adzunaJobs, ...jsearchJobsData];
+    // const allJobs = [...adzunaJobs, ...jsearchJobsData];
+    const allJob = [...adzunaJobs];
 
-  const userPrefs = req.user;
-  // const matchedJobs = allJob.map((job) => {
-  //   const score = getJobMatchScore(job, userPrefs);
-  //   return { ...job, score };
-  // });
+    const userPrefs = user;
+    // const matchedJobs = allJob.map((job) => {
+    //   const score = getJobMatchScore(job, userPrefs);
+    //   return { ...job, score };
+    // });
 
-  // const adzJob = adzunaJobs.forEach((job) => {
-  //   const match = scoreMatch(job, user);
-  //   console.log(match);
-  // });
+    // const adzJob = adzunaJobs.forEach((job) => {
+    //   const match = scoreMatch(job, user);
+    //   console.log(match);
+    // });
 
-  const matchedJobs = allJob.map((job) => {
-    const score = getJobMatchScore(userPrefs, job);
-    return { ...job, score };
-  });
+    const matchedJobs = allJob.map((job) => {
+      const score = getJobMatchScore(userPrefs, job);
+      return { ...job, score };
+    });
 
-  res.status(200).json({
-    status: "success",
-    results: allJobs.length,
-    data: {
-      // jobs: allJobs,
-      matchedJobs: matchedJobs,
-    },
-  });
+    matchedJobs.sort((a, b) => b.score - a.score);
+    const totalScore = matchedJobs.reduce((acc, job) => acc + job.score, 0);
+    const averageScore =
+      matchedJobs.length > 0 ? Math.round(totalScore / matchedJobs.length) : 0;
+
+    res.status(200).json({
+      status: "success",
+      results: allJob.length,
+      data: {
+        // jobs: allJobs,
+        totalScore: averageScore,
+        matchedJobs: matchedJobs,
+      },
+    });
+  } catch (error) {
+    console.log(error.message);
+  }
 };
 
 exports.saveJob = async (req, res) => {
@@ -213,7 +231,7 @@ function scoreMatch(job, prefs) {
 }
 
 function getJobMatchScore(userPref, job) {
-  const userSkills = userPref.skills
+  const userSkills = userPref?.skills
     .join(",")
     .toLowerCase()
     .split(",")
