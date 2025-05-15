@@ -3,17 +3,17 @@ const mongoose = require("mongoose");
 const jobModal = new mongoose.Schema({
   title: String,
   company: String,
-  location: {
+  contract_type: {
     type: String,
   },
   description: {
     type: String,
   },
-  url: {
+  salary: {
     type: String,
   },
-  source: String,
-  salary: String,
+  score: Number,
+  redirect_url: String,
   postedAt: String,
 
   userId: {
