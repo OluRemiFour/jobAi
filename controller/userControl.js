@@ -71,7 +71,6 @@ exports.uploadProfilePicture = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 exports.getProfilePicture = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -82,7 +81,17 @@ exports.getProfilePicture = async (req, res) => {
       });
     }
     const profilePicturePath = path.join(__dirname, "../", user.profilePicture);
-    res.sendFile(profilePicturePath);
+    if (!profilePicturePath) {
+      return res.status(404).json({
+        message: "Profile picture not found",
+      });
+    }
+    res.status(200).json({
+      message: "Profile picture retrieved successfully",
+      // profilePicture: user.profilePicture,
+      profilePicture: profilePicturePath,
+    });
+    // res.sendFile(profilePicturePath);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
