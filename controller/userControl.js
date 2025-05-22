@@ -82,6 +82,7 @@ exports.getProfilePicture = async (req, res) => {
       });
     }
     const profilePicturePath = path.join(__dirname, "../", user.profilePicture);
+    const filename = path.basename(user.profilePicture);
     if (!profilePicturePath) {
       return res.status(404).json({
         message: "Profile picture not found",
@@ -90,8 +91,9 @@ exports.getProfilePicture = async (req, res) => {
     res.status(200).json({
       statusCode: "007",
       message: "Profile picture retrieved successfully",
+      profilePicture: filename,
       // profilePicture: user.profilePicture,
-      profilePicture: profilePicturePath,
+      // profilePicture: profilePicturePath,
     });
     // res.sendFile(profilePicturePath);
   } catch (error) {

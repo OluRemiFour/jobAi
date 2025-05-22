@@ -49,6 +49,9 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// app.use(express.urlencoded({ extended: true }));
+
 // Routes
 app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/user", userRoute);
