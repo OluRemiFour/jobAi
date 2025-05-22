@@ -59,7 +59,8 @@ exports.uploadProfilePicture = async (req, res) => {
         message: "User not found",
       });
     }
-    user.profilePicture = req.file.path; // Save the file path to the user's profilePicture field
+    // user.profilePicture = req.file.path;
+    user.profilePicture = req.file.filename; // Save the file path to the user's profilePicture field
     await user.save();
 
     res.status(200).json({
