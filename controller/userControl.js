@@ -88,6 +88,7 @@ exports.getProfilePicture = async (req, res) => {
       });
     }
     res.status(200).json({
+      statusCode: "007",
       message: "Profile picture retrieved successfully",
       // profilePicture: user.profilePicture,
       profilePicture: profilePicturePath,
