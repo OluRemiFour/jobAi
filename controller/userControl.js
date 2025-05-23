@@ -65,8 +65,8 @@ exports.uploadProfilePicture = async (req, res) => {
 
     res.status(200).json({
       message: "Profile picture uploaded successfully",
-      profilePic: user.profilePicture,
-      // profilePicture: req.file.path,
+      // profilePic: user.profilePicture,
+      profilePicture: req.file.path,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -102,6 +102,7 @@ exports.uploadProfilePicture = async (req, res) => {
 //   }
 // };
 
+
 exports.getProfilePicture = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -115,8 +116,16 @@ exports.getProfilePicture = async (req, res) => {
       return res.status(404).json({ message: "Profile picture not found" });
     }
 
-    const filePath = path.join(__dirname, "..", "uploads", user.profilePicture);
-    res.sendFile(filePath);
+    // const filePath = path.join(__dirname, "..", "uploads", user.profilePicture);
+    // res.sendFile(filePath);
+    const profilePicUrl = `${req.protocol}://${req.get("host")}/uploads/${
+      user.profilePicture
+    }`;
+    res.status(200).json({
+      message: "Profile picture retrieved successfully",
+      profilePictureUrl: profilePicUrl,
+    });
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
