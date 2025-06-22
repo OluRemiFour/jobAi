@@ -2,7 +2,7 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const bcryptjs = require("bcryptjs");
-const sendEmail = require("../utils/email");
+const sendEmail = require("../utils/sendEmail");
 const User = require("../models/userModel");
 
 const jwtToken = (id) => {
@@ -113,6 +113,12 @@ exports.sendVerificationEmail = async (req, res) => {
     });
 
     const message = `Your verification code is: ${otp}. It will expire in 10 minutes.`;
+
+    // await sendEmail({
+    //   email,
+    //   subject: "Verify Your Email",
+    //   message,
+    // });
 
     await sendEmail({
       email,
