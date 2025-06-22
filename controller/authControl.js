@@ -114,12 +114,6 @@ exports.sendVerificationEmail = async (req, res) => {
 
     const message = `Your verification code is: ${otp}. It will expire in 10 minutes.`;
 
-    // await sendEmail({
-    //   email,
-    //   subject: "Verify Your Email",
-    //   message,
-    // });
-
     await sendEmail({
       email,
       subject: "Verify Your Email",
