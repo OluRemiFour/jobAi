@@ -72,36 +72,34 @@ exports.uploadProfilePicture = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 // exports.getProfilePicture = async (req, res) => {
 //   try {
 //     const userId = req.user.id;
 //     const user = await User.findById(userId);
+
 //     if (!user) {
-//       return res.status(404).json({
-//         message: "User not found",
-//       });
+//       return res.status(404).json({ message: "User not found" });
 //     }
-//     const profilePicturePath = path.join(__dirname, "../", user.profilePicture);
-//     const filename = path.basename(user.profilePicture);
-//     if (!profilePicturePath) {
-//       return res.status(404).json({
-//         message: "Profile picture not found",
-//       });
+
+//     if (!user.profilePicture) {
+//       return res.status(404).json({ message: "Profile picture not found" });
 //     }
+
+//     // const filePath = path.join(__dirname, "..", "uploads", user.profilePicture);
+//     // res.sendFile(filePath);
+//     const profilePicUrl = `${req.protocol}://${req.get("host")}/uploads/${
+//       user.profilePicture
+//     }`;
 //     res.status(200).json({
-//       statusCode: "007",
 //       message: "Profile picture retrieved successfully",
-//       // profilePicture: filename,
-//       // profilePicture: path.basename(user.profilePicture),
-//       // profilePicture: user.profilePicture,
-//       // profilePicture: profilePicturePath,
+//       profilePictureUrl: profilePicUrl,
 //     });
-//     // res.sendFile(profilePicturePath);
+
 //   } catch (error) {
 //     res.status(500).json({ error: error.message });
 //   }
 // };
-
 
 exports.getProfilePicture = async (req, res) => {
   try {
@@ -116,16 +114,17 @@ exports.getProfilePicture = async (req, res) => {
       return res.status(404).json({ message: "Profile picture not found" });
     }
 
-    // const filePath = path.join(__dirname, "..", "uploads", user.profilePicture);
-    // res.sendFile(filePath);
-    const profilePicUrl = `${req.protocol}://${req.get("host")}/uploads/${
-      user.profilePicture
-    }`;
+    // Extract just the filename, not the full path
+    const filename = path.basename(user.profilePicture);
+
+    const profilePicUrl = `${req.protocol}://${req.get(
+      "host"
+    )}/uploads/${filename}`;
+
     res.status(200).json({
       message: "Profile picture retrieved successfully",
       profilePictureUrl: profilePicUrl,
     });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
